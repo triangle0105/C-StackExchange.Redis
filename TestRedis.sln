@@ -1,9 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestRedis", "TestRedis\TestRedis.csproj", "{CFD363DF-1589-436B-A15E-9EFD6EF373B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "installpackage", "installpackage", "{C7B5C66D-9542-4611-BC45-5EE2E2D2F237}"
+	ProjectSection(SolutionItems) = preProject
+		installpackage\Redis-x64-3.0.504.msi = installpackage\Redis-x64-3.0.504.msi
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
