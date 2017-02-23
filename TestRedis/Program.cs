@@ -16,16 +16,27 @@ namespace TestRedis
             //ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
             //IDatabase db = redis.GetDatabase();
 
-            //string value = "abcdefg";
-            //db.StringSet("mykey", value);
+            //string value1 = "abcdefg";
+            //db.StringSet("mykey", value1);
 
             //var info = db.StringGet("mykey");
             //Console.WriteLine(info); // writes: "abcdefg"
 
+            //ISubscriber sub = redis.GetSubscriber();
+            //sub.Subscribe("messages", (channel, message) =>
+            //{
+            //    Console.WriteLine((string)message);
+            //});
+            //sub.Publish("messages", "hello");
+
+            //// sliding expiration
+            //db.KeyExpire("mykey", TimeSpan.FromSeconds(0), flags: CommandFlags.FireAndForget);
+            //var value = (string)db.StringGet("mykey");
+            //Console.WriteLine(value);
             //Console.ReadKey();
 
 
-            RedisHelper redis = new RedisHelper(1);
+            RedisHelper redis = new RedisHelper();
 
             #region String
 

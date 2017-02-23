@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -26,8 +28,8 @@ namespace TestRedis
             DbNum = dbNum;
             _conn =
                 string.IsNullOrWhiteSpace(readWriteHosts) ?
-                RedisConnectionHelp.Instance :
-                RedisConnectionHelp.GetConnectionMultiplexer(readWriteHosts);
+                RedisConnection.Instance :
+                RedisConnection.GetConnectionMultiplexer(readWriteHosts);
         }
 
         
@@ -41,25 +43,27 @@ namespace TestRedis
         /// <summary>
         /// 保存单个key value
         /// </summary>
+        /// <param name="folder">redis文件夹</param>
         /// <param name="key">Redis Key</param>
         /// <param name="value">保存的值</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
-        public bool StringSet(string key, string value, TimeSpan? expiry = default(TimeSpan?))
+        public bool StringSet(string folder ,string key, string value, TimeSpan? expiry = default(TimeSpan?))
         {
             key = AddSysCustomKey(key);
-            return Do(db => db.StringSet(key, value, expiry));
+            return Do(db => db.StringSet(string.IsNullOrEmpty(folder) ? key : folder + ":" + key, value, expiry));
         }
 
         /// <summary>
         /// 保存多个key value
         /// </summary>
+        /// <param name="folder">redis文件夹</param>
         /// <param name="keyValues">键值对</param>
         /// <returns></returns>
-        public bool StringSet(List<KeyValuePair<RedisKey, RedisValue>> keyValues)
+        public bool StringSet(string folder, List<KeyValuePair<RedisKey, RedisValue>> keyValues)
         {
             List<KeyValuePair<RedisKey, RedisValue>> newkeyValues =
-                keyValues.Select(p => new KeyValuePair<RedisKey, RedisValue>(AddSysCustomKey(p.Key), p.Value)).ToList();
+                keyValues.Select(p => new KeyValuePair<RedisKey, RedisValue>((string.IsNullOrEmpty(folder) ? p.Key : (RedisKey) (folder + ":" + AddSysCustomKey(p.Key))), p.Value)).ToList();
             return Do(db => db.StringSet(newkeyValues.ToArray()));
         }
 
@@ -67,34 +71,37 @@ namespace TestRedis
         /// 保存一个对象
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="folder">redis文件夹</param>
         /// <param name="key"></param>
         /// <param name="obj"></param>
         /// <param name="expiry"></param>
         /// <returns></returns>
-        public bool StringSet<T>(string key, T obj, TimeSpan? expiry = default(TimeSpan?))
+        public bool StringSet<T>(string folder, string key, T obj, TimeSpan? expiry = default(TimeSpan?))
         {
             key = AddSysCustomKey(key);
             string json = ConvertJson(obj);
-            return Do(db => db.StringSet(key, json, expiry));
+            return Do(db => db.StringSet(string.IsNullOrEmpty(folder) ? key : folder + ":" + key, json, expiry));
         }
 
         /// <summary>
         /// 获取单个key的值
         /// </summary>
+        /// <param name="folder">redis文件夹</param>
         /// <param name="key">Redis Key</param>
         /// <returns></returns>
-        public string StringGet(string key)
+        public string StringGet(string folder, string key)
         {
             key = AddSysCustomKey(key);
-            return Do(db => db.StringGet(key));
+            return Do(db => db.StringGet(string.IsNullOrEmpty(folder) ? key : folder + ":" + key));
         }
 
         /// <summary>
         /// 获取多个Key
         /// </summary>
+        /// <param name="folder">redis文件夹</param>
         /// <param name="listKey">Redis Key集合</param>
         /// <returns></returns>
-        public RedisValue[] StringGet(List<string> listKey)
+        public RedisValue[] StringGet(string folder, List<string> listKey)
         {
             List<string> newKeys = listKey.Select(AddSysCustomKey).ToList();
             return Do(db => db.StringGet(ConvertRedisKeys(newKeys)));
@@ -921,7 +928,7 @@ namespace TestRedis
 
         private string AddSysCustomKey(string oldKey)
         {
-            var prefixKey = CustomKey ?? RedisConnectionHelp.SysCustomKey;
+            var prefixKey = CustomKey ?? RedisConnection.SysCustomKey;
             return prefixKey + oldKey;
         }
 
@@ -959,5 +966,7 @@ namespace TestRedis
         }
 
         #endregion 辅助方法
+
+
     }
 }

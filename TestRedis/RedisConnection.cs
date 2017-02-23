@@ -12,7 +12,7 @@ namespace TestRedis
     /// <summary>
     /// ConnectionMultiplexer对象管理帮助类
     /// </summary>
-    public static class RedisConnectionHelp
+    public static class RedisConnection
     {
         //系统自定义Key前缀
         public static readonly string SysCustomKey = ConfigurationManager.AppSettings["redisKey"] ?? "";
@@ -45,20 +45,6 @@ namespace TestRedis
             }
         }
 
-        /// <summary>
-        /// 缓存获取
-        /// </summary>
-        /// <param name="connectionString"></param>
-        /// <returns></returns>
-        public static ConnectionMultiplexer GetConnectionMultiplexer(string connectionString)
-        {
-            if (!ConnectionCache.ContainsKey(connectionString))
-            {
-                ConnectionCache[connectionString] = GetManager(connectionString);
-            }
-            return ConnectionCache[connectionString];
-        }
-
         private static ConnectionMultiplexer GetManager(string connectionString = null)
         {
             connectionString = connectionString ?? RedisConnectionString;
@@ -75,6 +61,20 @@ namespace TestRedis
             return connect;
         }
 
+        /// <summary>
+        /// 缓存获取
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <returns></returns>
+        public static ConnectionMultiplexer GetConnectionMultiplexer(string connectionString)
+        {
+            if (!ConnectionCache.ContainsKey(connectionString))
+            {
+                ConnectionCache[connectionString] = GetManager(connectionString);
+            }
+            return ConnectionCache[connectionString];
+        }
+
         #region 事件
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerConfigurationChanged(object sender, EndPointEventArgs e)
         {
-            Console.WriteLine("Configuration changed: " + e.EndPoint);
+            Logger.RecordLog(DateTime.Now.ToLongTimeString()+"-------"+"Configuration changed: " + e.EndPoint);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerErrorMessage(object sender, RedisErrorEventArgs e)
         {
-            Console.WriteLine("ErrorMessage: " + e.Message);
+            Logger.RecordLog(DateTime.Now.ToLongTimeString() + "-------" + "ErrorMessage: " + e.Message);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerConnectionRestored(object sender, ConnectionFailedEventArgs e)
         {
-            Console.WriteLine("ConnectionRestored: " + e.EndPoint);
+            Logger.RecordLog(DateTime.Now.ToLongTimeString() + "-------" + "ConnectionRestored: " + e.EndPoint);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerConnectionFailed(object sender, ConnectionFailedEventArgs e)
         {
-            Console.WriteLine("重新连接：Endpoint failed: " + e.EndPoint + ", " + e.FailureType + (e.Exception == null ? "" : (", " + e.Exception.Message)));
+            Logger.RecordLog(DateTime.Now.ToLongTimeString() + "-------" + "重新连接：Endpoint failed: " + e.EndPoint + ", " + e.FailureType + (e.Exception == null ? "" : (", " + e.Exception.Message)));
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerHashSlotMoved(object sender, HashSlotMovedEventArgs e)
         {
-            Console.WriteLine("HashSlotMoved:NewEndPoint" + e.NewEndPoint + ", OldEndPoint" + e.OldEndPoint);
+            Logger.RecordLog(DateTime.Now.ToLongTimeString() + "-------" + "HashSlotMoved:NewEndPoint" + e.NewEndPoint + ", OldEndPoint" + e.OldEndPoint);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace TestRedis
         /// <param name="e"></param>
         private static void MuxerInternalError(object sender, InternalErrorEventArgs e)
         {
-            Console.WriteLine("InternalError:Message" + e.Exception.Message);
+            Logger.RecordLog(DateTime.Now.ToLongTimeString() + "-------" + "InternalError:Message" + e.Exception.Message);
         }
 
         #endregion 事件
