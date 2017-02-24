@@ -1,1 +1,1 @@
-﻿<%@ ServiceHost Language="C#" Debug="true" Service="RedisWcf.Service1" CodeBehind="RedisOperation.svc.cs" %>
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="RedisWcf.RedisOperation" CodeBehind="RedisOperation.svc.cs" %>

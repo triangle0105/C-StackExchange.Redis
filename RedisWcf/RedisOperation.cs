@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Web;
 using System.Text;
+using DynamicExtension;
 
 namespace RedisWcf
 {
@@ -19,7 +20,9 @@ namespace RedisWcf
         [OperationContract]
         CompositeType GetDataUsingDataContract(CompositeType composite);
 
-
+        RedisData<T> GetData<T>(T data);
+        //[OperationContract]
+        //string 
 
         // TODO: 在此添加您的服务操作
     }
