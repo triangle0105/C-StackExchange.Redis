@@ -10,5 +10,5 @@ namespace TestRedis
     {
     }
 
-    public 
+    //public 
 }

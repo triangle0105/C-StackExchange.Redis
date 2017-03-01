@@ -843,12 +843,50 @@ namespace TestRedis
         /// <param name="keyvalue">redis key</param>
         /// <param name="hostAndPort"></param>
         /// <returns></returns>
-        public List<string> GetKeysContains(string folder, string keyvalue, string hostAndPort)
+        public List<string> GetKeysContains(string folder, string keyvalue)
         {
             var keyList = new List<string>();
-            keyList.AddRange(_conn.GetServer(hostAndPort).Keys(pattern: string.Format("*{0}*", keyvalue)).Select(key => (string) key));
+            var server = _conn.GetServer(RedisConnection.HostAndPort);
+            keyList.AddRange(server.Keys(pattern: string.Format("*{0}*", keyvalue)).Select(key => (string)key));
             return keyList;
         }
+
+        /// <summary>
+        ///  Redis String类型
+        /// 类似于模糊查询  key* 查出所有key开头的键
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="commandFlags"></param>
+        /// <returns>List<T></returns>
+        public List<T> StringGetList<T>(string key, int pageSize = 1000, CommandFlags commandFlags = CommandFlags.None) where T : class
+        {
+            try
+            {
+                var server = _conn.GetServer(RedisConnection.HostAndPort);
+                var keys = server.Keys(_conn.GetDatabase().Database, key, pageSize, commandFlags);
+                var keyValues = _conn.GetDatabase().StringGet(keys.ToArray(), commandFlags);
+
+                var result = new List<T>();
+                foreach (var redisValue in keyValues)
+                {
+                    if (redisValue.HasValue && !redisValue.IsNullOrEmpty)
+                    {
+                        var item = JsonConvert.DeserializeObject<T>(redisValue);
+                        result.Add(item);
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception)
+            {
+                // Log Exception
+                return null;
+            }
+        }
+
         #endregion key
 
         #region 发布订阅
@@ -920,9 +958,9 @@ namespace TestRedis
             return _conn.GetDatabase(DbNum);
         }
 
-        public IServer GetServer(string hostAndPort)
+        public IServer GetServer()
         {
-            return _conn.GetServer(hostAndPort);
+            return _conn.GetServer(RedisConnection.HostAndPort);
         }
 
         #endregion 其他
@@ -964,6 +1002,9 @@ namespace TestRedis
 
         #endregion 辅助方法
 
-
+        public List<object> GetKeys(string folder, string leftresult, string rightResult, RelationOperator relationOperator)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

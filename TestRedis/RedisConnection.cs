@@ -23,6 +23,7 @@ namespace TestRedis
         private static readonly object Locker = new object();
         private static ConnectionMultiplexer _instance;
         private static readonly ConcurrentDictionary<string, ConnectionMultiplexer> ConnectionCache = new ConcurrentDictionary<string, ConnectionMultiplexer>();
+        public static string HostAndPort { get; set; }
 
         /// <summary>
         /// 单例获取
@@ -49,6 +50,9 @@ namespace TestRedis
         {
             connectionString = connectionString ?? RedisConnectionString;
             var connect = ConnectionMultiplexer.Connect(connectionString);
+
+            //获取redis服务地址和端口
+            HostAndPort = RedisConnectionString.Split(',').Where(n => !n.Contains('=') && n.Contains(':')).ToList()[0];
 
             //注册如下事件
             connect.ConnectionFailed += MuxerConnectionFailed;

@@ -35,7 +35,7 @@ namespace TestRedis
             //// sliding expiration
             //db.KeyExpire("mykey", TimeSpan.FromSeconds(0), flags: CommandFlags.FireAndForget);
             var value = (string)db.StringGet("mykey");
-            foreach (var key in redisdbHelper.GetServer("127.0.0.1:6379,allowadmin=true").Keys(pattern: "*ke*"))
+            foreach (var key in redisdbHelper.GetServer().Keys(pattern: "*ke*"))
             {
                 Console.WriteLine(key);
             }
