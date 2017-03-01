@@ -836,6 +836,19 @@ namespace TestRedis
             return Do(db => db.KeyExpire(string.IsNullOrEmpty(folder) ? key : folder + ":" + key, expiry));
         }
 
+        /// <summary>
+        /// 获取模糊查询的keylist
+        /// </summary>
+        /// <param name="folder">redis文件夹</param>
+        /// <param name="keyvalue">redis key</param>
+        /// <param name="hostAndPort"></param>
+        /// <returns></returns>
+        public List<string> GetKeysContains(string folder, string keyvalue, string hostAndPort)
+        {
+            var keyList = new List<string>();
+            keyList.AddRange(_conn.GetServer(hostAndPort).Keys(pattern: string.Format("*{0}*", keyvalue)).Select(key => (string) key));
+            return keyList;
+        }
         #endregion key
 
         #region 发布订阅

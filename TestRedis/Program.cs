@@ -1,4 +1,5 @@
 ﻿
+using System.Configuration;
 using System.Threading;
 using StackExchange.Redis;
 using System;
@@ -13,14 +14,16 @@ namespace TestRedis
     {
         static void Main(string[] args)
         {
-            //ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-            //IDatabase db = redis.GetDatabase();
 
-            //string value1 = "abcdefg";
-            //db.StringSet("mykey", value1);
+            RedisHelper redisdbHelper = new RedisHelper();
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+            IDatabase db = redis.GetDatabase();
 
-            //var info = db.StringGet("mykey");
-            //Console.WriteLine(info); // writes: "abcdefg"
+            string value1 = "abcdefg";
+            db.StringSet("mykey", value1);
+
+            var info = db.StringGet("mykey");
+            Console.WriteLine(info); // writes: "abcdefg"
 
             //ISubscriber sub = redis.GetSubscriber();
             //sub.Subscribe("messages", (channel, message) =>
@@ -31,12 +34,16 @@ namespace TestRedis
 
             //// sliding expiration
             //db.KeyExpire("mykey", TimeSpan.FromSeconds(0), flags: CommandFlags.FireAndForget);
-            //var value = (string)db.StringGet("mykey");
-            //Console.WriteLine(value);
-            //Console.ReadKey();
+            var value = (string)db.StringGet("mykey");
+            foreach (var key in redisdbHelper.GetServer("127.0.0.1:6379,allowadmin=true").Keys(pattern: "*ke*"))
+            {
+                Console.WriteLine(key);
+            }
+            Console.WriteLine(value);
+            Console.ReadKey();
 
 
-            RedisHelper redis = new RedisHelper();
+            //RedisHelper redis = new RedisHelper();
 
             //#region String
 
@@ -63,25 +70,25 @@ namespace TestRedis
 
             //#endregion String
 
-            #region List
+            //#region List
 
-            for (int i = 0; i < 10; i++)
-            {
-                redis.ListRightPush("Folder1", "list", i);
-            }
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    redis.ListRightPush("Folder1", "list", i);
+            //}
 
-            for (int i = 10; i < 20; i++)
-            {
-                redis.ListLeftPush("Folder1", "list", i);
-            }
-            var length = redis.ListLength("Folder1", "list");
+            //for (int i = 10; i < 20; i++)
+            //{
+            //    redis.ListLeftPush("Folder1", "list", i);
+            //}
+            //var length = redis.ListLength("Folder1", "list");
 
-            var leftpop = redis.ListLeftPop<string>("Folder1", "list");
-            var rightPop = redis.ListRightPop<string>("Folder1", "list");
+            //var leftpop = redis.ListLeftPop<string>("Folder1", "list");
+            //var rightPop = redis.ListRightPop<string>("Folder1", "list");
 
-            var list = redis.ListRange<int>("Folder1", "list");
+            //var list = redis.ListRange<int>("Folder1", "list");
 
-            #endregion List
+            //#endregion List
 
             //#region Hash
 
