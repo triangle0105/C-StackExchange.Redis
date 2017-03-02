@@ -1,5 +1,6 @@
 ﻿
 using System.Configuration;
+using System.Globalization;
 using System.Threading;
 using StackExchange.Redis;
 using System;
@@ -12,18 +13,120 @@ namespace TestRedis
 {
     class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
+            var redisservice = new RedisService();
+            var paitients = InitialPatientInfos();
+            var redisSearchField = new List<RedisSearchField>
+            {
+                new RedisSearchField{Name = "VisitNumber",TypeCode = TypeCode.String},
+                new RedisSearchField{Name = "Age",TypeCode = TypeCode.Int32},
+                new RedisSearchField{Name = "PatientName",TypeCode = TypeCode.String},
+                new RedisSearchField{Name = "Company",TypeCode = TypeCode.String},
+            };
 
-            RedisHelper redisdbHelper = new RedisHelper();
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-            IDatabase db = redis.GetDatabase();
+            //redisservice.RedisSet("PatientInfo", paitients, redisSearchField);
 
-            string value1 = "abcdefg";
-            db.StringSet("mykey", value1);
+            var result = redisservice.GetList<PatientInfo>("PatientInfo", "Age > 20 && Company like '医利捷'");
+        }
 
-            var info = db.StringGet("mykey");
-            Console.WriteLine(info); // writes: "abcdefg"
+        private static List<PatientInfo> InitialPatientInfos()
+        {
+            var patientInfos = new List<PatientInfo>();
+                patientInfos.Add(new PatientInfo
+                {
+                    Id = Guid.NewGuid(),
+                    VisitNumber = (12345678).ToString(CultureInfo.InvariantCulture),
+                    PatientId = (234567).ToString(CultureInfo.InvariantCulture),
+                    PatientName = "male1",
+                    Gender = 1,
+                    Age = 25,
+                    Nation = "中华人民共和国",
+                    BirthDay = DateTime.Now,
+                    ICD = "4564646546156516165156",
+                    FamilyPhone = "1111111111",
+                    ContactPhone = "18615516481",
+                    ContactAddress = "中华人民共和国上海市",
+                    Hkadr = "中华人民共和国上海市",
+                    CurrentAddress = "中华人民共和国上海市",
+                    Profession = "profession1",
+                    Company = "医利捷信息科技有限公司",
+                    CreatorCode = "0001",
+                    CreatorName = "admin",
+                    CreateTime = DateTime.Now,
+                    UpdateTime = DateTime.Now,
+                    IsDelete = false,
+                    UpdatorCode = "0001",
+                    UpdatorName = "admin",
+                }); 
+                patientInfos.Add(new PatientInfo
+                {
+                    Id = Guid.NewGuid(),
+                    VisitNumber = (12345699).ToString(CultureInfo.InvariantCulture),
+                    PatientId = (234566).ToString(CultureInfo.InvariantCulture),
+                    PatientName = "male2",
+                    Gender = 1,
+                    Age = 20,
+                    Nation = "中华人民共和国",
+                    BirthDay = DateTime.Now,
+                    ICD = "456462664651615555",
+                    FamilyPhone = "2222222222",
+                    ContactPhone = "18615516561",
+                    ContactAddress = "中华人民共和国上海市",
+                    Hkadr = "中华人民共和国上海市",
+                    CurrentAddress = "中华人民共和国上海市",
+                    Profession = "profession1",
+                    Company = "斯迈康信息科技有限公司",
+                    CreatorCode = "0001",
+                    CreatorName = "admin",
+                    CreateTime = DateTime.Now,
+                    UpdateTime = DateTime.Now,
+                    IsDelete = false,
+                    UpdatorCode = "0001",
+                    UpdatorName = "admin",
+                });
+                patientInfos.Add(new PatientInfo
+                {
+                    Id = Guid.NewGuid(),
+                    VisitNumber = (12421699).ToString(CultureInfo.InvariantCulture),
+                    PatientId = (267866).ToString(CultureInfo.InvariantCulture),
+                    PatientName = "female1",
+                    Gender = 0,
+                    Age = 18,
+                    Nation = "中华人民共和国",
+                    BirthDay = DateTime.Now,
+                    ICD = "45648948951615555",
+                    FamilyPhone = "333333333333",
+                    ContactPhone = "18615432561",
+                    ContactAddress = "中华人民共和国上海市",
+                    Hkadr = "中华人民共和国上海市",
+                    CurrentAddress = "中华人民共和国上海市",
+                    Profession = "profession1",
+                    Company = "医利捷信息科技有限公司",
+                    CreatorCode = "0001",
+                    CreatorName = "admin",
+                    CreateTime = DateTime.Now,
+                    UpdateTime = DateTime.Now,
+                    IsDelete = false,
+                    UpdatorCode = "0001",
+                    UpdatorName = "admin",
+                });
+            //var list = patientInfos.Where(n => n.Age == 1);
+            return patientInfos;
+        }
+
+        //static void Main(string[] args)
+        //{
+
+        //    RedisHelper redisdbHelper = new RedisHelper();
+        //    ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+        //    IDatabase db = redis.GetDatabase();
+
+        //    string value1 = "abcdefg";
+        //    db.StringSet("mykey", value1);
+
+        //    var info = db.StringGet("mykey");
+        //    Console.WriteLine(info); // writes: "abcdefg"
 
             //ISubscriber sub = redis.GetSubscriber();
             //sub.Subscribe("messages", (channel, message) =>
@@ -34,13 +137,19 @@ namespace TestRedis
 
             //// sliding expiration
             //db.KeyExpire("mykey", TimeSpan.FromSeconds(0), flags: CommandFlags.FireAndForget);
-            var value = (string)db.StringGet("mykey");
-            foreach (var key in redisdbHelper.GetServer().Keys(pattern: "*ke*"))
-            {
-                Console.WriteLine(key);
-            }
-            Console.WriteLine(value);
-            Console.ReadKey();
+            //var keylist = new List<string>
+            //{
+            //    "folertest1:keytest",
+            //    "folertest:keytest"
+            //};
+            //var list = redisdbHelper.StringGetAsync("", keylist);
+            //var value = (string)db.StringGet("mykey");
+            //foreach (var key in redisdbHelper.GetServer().Keys(pattern: "*ke*"))
+            //{
+            //    Console.WriteLine(key);
+            //}
+            //Console.WriteLine(value);
+            //Console.ReadKey();
 
 
             //RedisHelper redis = new RedisHelper();
@@ -141,11 +250,39 @@ namespace TestRedis
             //}
 
             //#endregion Lock
-        }
+        //}
     }
     public class Demo
     {
         public int Id { get; set; }
         public string Name { get; set; }
+    }
+
+    public class PatientInfo
+    {
+        public Guid Id { get; set; }
+        public string VisitNumber { get; set; }
+        public string PatientId { get; set; }
+        public string AdmissionNumber { get; set; }
+        public string PatientName { get; set; }
+        public int Gender { get; set; }
+        public float? Age { get; set; }
+        public string Nation { get; set; }
+        public DateTime? BirthDay { get; set; }
+        public string ICD { get; set; }
+        public string FamilyPhone { get; set; }
+        public string ContactPhone { get; set; }
+        public string ContactAddress { get; set; }
+        public string Hkadr { get; set; }
+        public string CurrentAddress { get; set; }
+        public string Profession { get; set; }
+        public string Company { get; set; }
+        public string CreatorCode { get; set; }
+        public string CreatorName { get; set; }
+        public string UpdatorCode { get; set; }
+        public string UpdatorName { get; set; }
+        public DateTime CreateTime { get; set; }
+        public DateTime? UpdateTime { get; set; }
+        public bool IsDelete { get; set; }
     }
 }

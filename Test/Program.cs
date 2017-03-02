@@ -86,6 +86,7 @@ namespace Test
                     UpdatorName = "admin",
                 });
             }
+            //var list = patientInfos.Where(n => n.Age == 1);
             return patientInfos;
         }
     }

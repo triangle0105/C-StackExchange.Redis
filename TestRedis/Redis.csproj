@@ -75,10 +75,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisConnection.cs" />
-    <Compile Include="RedisFilter.cs" />
+    <Compile Include="RedisSearchField.cs" />
     <Compile Include="RedisHelper.cs" />
     <Compile Include="RedisService.cs" />
-    <Compile Include="SearchExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

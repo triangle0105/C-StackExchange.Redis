@@ -16,42 +16,40 @@ namespace TestRedis
         public static List<T> ReturnResult { get; set; }
         public static string Folder { get; set; }
         public static RedisHelper RedisHelper { get; set; }
-
-
+      
         public static List<T> Where<T>(string folder, string searchText,RedisHelper redisHelper)
         {
             Folder = folder;
             RedisHelper = redisHelper;
-
-            return null;
+            var expressionParser = new ExpressionParser<T>(searchText, folder, redisHelper);
+            var resultkeyList=expressionParser.ExpressionLoop();
+            var result = RedisHelper.StringGetToObj<T>(folder, resultkeyList);
+            return result;
         }
-
-        public static List<T> ExpressionTextAnalyse<T>(string searchText)
-        {
-            var a = new ExpressionParser<T>(searchText, Folder, redisHelper);
-            return null;
-        }
-
-        
     }
+
     public enum RelationOperator
     {
         Le,
         Lt,
         Ge,
         Gt,
-        Eq
+        Eq,
+        NotEq,
+        Like,
+        Empty
     }
+
     internal class ExpressionParser<T>
     {
         public static List<T> ReturnResult { get; set; }
-        public static RedisHelper RedisHelper { get; set; }
-        struct Token
-        {
-            public TokenId id;
-            public string text;
-            public int pos;
-        }
+        public RedisHelper RedisHelper { get; set; }
+        //struct Token
+        //{
+        //    public TokenId id;
+        //    public string text;
+        //    public int pos;
+        //}
         internal string Folder { get; set; }
 
         enum TokenId
@@ -96,39 +94,19 @@ namespace TestRedis
             Or,
         }
 
-
-
-        static readonly Type[] predefinedTypes = {
-            typeof(Object),
-            typeof(Boolean),
-            typeof(Char),
-            typeof(String),
-            typeof(SByte),
-            typeof(Byte),
-            typeof(Int16),
-            typeof(UInt16),
-            typeof(Int32),
-            typeof(UInt32),
-            typeof(Int64),
-            typeof(UInt64),
-            typeof(Single),
-            typeof(Double),
-            typeof(Decimal),
-            typeof(DateTime),
-            typeof(TimeSpan),
-            typeof(Guid),
-            typeof(Math),
-            typeof(Convert)
-        };
-
         string text;
         int textPos;
         int textLen;
         char ch;
-        Token token;
+        //Token token;
 
         private string LeftExpression;
         private string RightExpression;
+
+        private int startPos=-1;
+        private bool logicFlag = false;
+        private int currentPos=0;
+
         //private 
 
         public ExpressionParser(string expression,string folder,RedisHelper redisHelper)
@@ -137,25 +115,254 @@ namespace TestRedis
             text = expression;
             textLen = text.Length;
             Folder = folder;
-            RedisHelper = redisHelper;
-            for (int i = 0; i < textLen; i++)
-            {
-                if()
-            }
-            SetTextPos(0);
-            NextToken();
+            this.RedisHelper = redisHelper;
         }
-
-        public List<T> LogicOperation<T>(List<T> leftresult,List<T> rightResult,LogicOperator logicOperator)
+        //(age >= 15 || (name like "aaa" && age=10&& age=10)) || (age<20 && name="ccc")
+        public List<string> ExpressionLoop(int startIndex = 0)
         {
-            var result = new List<T>();
+            //左右表达式与关系运算符
+            var expressionLeft = "";
+            var expressionRight = "";
+            var relationSymbol = RelationOperator.Empty;
+            //关系运算表达式与关系运算结果
+            var keylist1 = new List<string>();
+            var keylist2 = new List<string>();
+            var logicSymbol = new LogicOperator();
+
+            for (int i = startIndex; i < textLen; i++)
+            {
+                switch (text[i])
+                {
+                    case '(':
+                        currentPos = i;
+                        if (keylist1==null)
+                        {
+                            keylist1 = ExpressionLoop(i + 1);
+                        }
+                        else
+                        {
+                            keylist2 = ExpressionLoop(i + 1);
+                            i = currentPos;
+                            var keylist = LogicOperation(keylist1, keylist2, logicSymbol);
+                            keylist1 = keylist;
+                            keylist2 = null;
+                            logicSymbol = new LogicOperator(); 
+                        }
+                        break;
+                    case ')':
+                        currentPos = i;
+                        return keylist1;
+                        break;
+                    case ' ':
+                        if (string.IsNullOrEmpty(expressionLeft) && startPos != -1)
+                        {
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        else if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && startPos != -1)
+                        {
+                            expressionRight = text.Substring(startPos, i - startPos);
+                            keylist1 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                            //获取表达式结果清空左表达式
+                            expressionLeft = "";
+                            expressionRight = "";
+                            relationSymbol = RelationOperator.Empty;
+                            startPos = -1;
+                        }
+                        break;
+                    case '>':
+                        relationSymbol = text[i+1] == '=' ? RelationOperator.Gt : RelationOperator.Ge;
+                        if (text[i + 1] == '=')
+                        {
+                            relationSymbol = RelationOperator.Gt;
+                            i = i + 1;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        else
+                        {
+                            relationSymbol = RelationOperator.Ge;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        break;
+                    case '<':
+                        relationSymbol = text[i+1] == '=' ? RelationOperator.Lt : RelationOperator.Le;
+                        if (text[i + 1] == '=')
+                        {
+                            relationSymbol = RelationOperator.Lt;
+                            i = i + 1;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        else
+                        {
+                            relationSymbol = RelationOperator.Le;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        break;
+                    case '!':
+                        relationSymbol = RelationOperator.NotEq;
+                        if (text[i + 1] == '=')
+                        {
+                            relationSymbol = RelationOperator.NotEq;
+                            i = i + 1;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        else
+                        {
+                            throw new Exception("!=表达式错误");
+                        }
+                        break;
+                    case '=':
+                        relationSymbol = RelationOperator.Eq;
+                        if (text[i + 1] == '=')
+                        {
+                            relationSymbol = RelationOperator.Eq;
+                            i = i + 1;
+                            if (!string.IsNullOrEmpty(expressionLeft) || startPos == -1) continue;
+                            expressionLeft = text.Substring(startPos, i - startPos);
+                            startPos = -1;
+                        }
+                        else
+                        {
+                            throw new Exception("==表达式错误");
+                        }
+                        break;
+                    case '\'':
+                        if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && startPos != -1)
+                        {
+                            expressionRight = text.Substring(startPos, i - startPos);
+                            keylist1 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                            //获取表达式结果清空左表达式
+                            expressionLeft = "";
+                            expressionRight = "";
+                            relationSymbol = RelationOperator.Empty;
+                            startPos = -1;
+                        }
+                        break;
+                    case '"':
+                        if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && startPos != -1)
+                        {
+                            expressionRight = text.Substring(startPos, i - startPos);
+                            keylist1 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                            //获取表达式结果清空左表达式
+                            expressionLeft = "";
+                            expressionRight = "";
+                            relationSymbol = RelationOperator.Empty;
+                            startPos = -1;
+                        }
+                        break;
+                    case '|':
+                        if (text[i + 1] != '|')
+                        {
+                            throw new Exception("||表达式错误");
+                        }
+                        else
+                        {
+                            logicSymbol = LogicOperator.Or;
+                            i = i + 1;
+                        }
+                        if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && startPos != -1)
+                        {
+                            expressionRight = text.Substring(startPos, i - startPos);
+                            keylist2 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                            var keylist = LogicOperation(keylist1, keylist2, logicSymbol);
+                            keylist1 = keylist;
+                            keylist2 = null;
+                            logicSymbol = new LogicOperator(); 
+                            //获取表达式结果清空左表达式
+                            expressionLeft = "";
+                            expressionRight = "";
+                            relationSymbol = RelationOperator.Empty;
+                            startPos = -1;
+                        }
+                        break;
+                    case '&':
+                        if (text[i + 1] != '&')
+                        {
+                            throw new Exception("|表达式错误");
+                        }
+                        else
+                        {
+                            logicSymbol = LogicOperator.And;
+                            i = i + 1;
+                        }
+                        if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && startPos != -1)
+                        {
+                            expressionRight = text.Substring(startPos, i - startPos);
+                            keylist2 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                            var keylist = LogicOperation(keylist1, keylist2, logicSymbol);
+                            keylist1 = keylist;
+                            keylist2 = null;
+                            logicSymbol = new LogicOperator(); 
+                            //获取表达式结果清空左表达式
+                            expressionLeft = "";
+                            expressionRight = "";
+                            relationSymbol = RelationOperator.Empty;
+                            startPos = -1;
+                        }
+                        break;
+                    case '\0':
+                        break;
+                    case 'l':
+                        if (text[i + 1] == 'i' && text[i + 2] == 'k' && text[i + 3] == 'e' && text[i - 1] == ' ' && text[i + 4] == ' ')
+                        {
+                            relationSymbol = RelationOperator.Like;
+                            i = i + 3;
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && Char.IsLetterOrDigit(text[i]) && startPos == -1)
+                            {
+                                startPos = i;
+                            }
+                        }
+                        break;
+                    default:
+                        if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
+                                 relationSymbol != RelationOperator.Empty && Char.IsLetterOrDigit(text[i]) && startPos == -1)
+                        {
+                            startPos = i;
+                        }
+                        break;
+                }
+            }
+            return keylist1;
+        }
+        void SetTextPos(int pos)
+        {
+            textPos = pos;
+            ch = textPos < textLen ? text[textPos] : '\0';
+        }
+        void NextChar()
+        {
+            if (textPos < textLen) textPos++;
+            ch = textPos < textLen ? text[textPos] : '\0';
+        }
+        public List<string> LogicOperation(List<string> leftresult, List<string> rightResult, LogicOperator logicOperator)
+        {
+            var result = new List<string>();
             switch (logicOperator)
             {
                 case LogicOperator.And:
-                    result = (List<T>) leftresult.Intersect(rightResult);
+                    result = (List<string>)leftresult.Intersect(rightResult);
                     break;
                 case LogicOperator.Or:
-                    result = (List<T>)leftresult.Union(rightResult);
+                    result = (List<string>)leftresult.Union(rightResult);
                     break;
             }
             return result;
@@ -167,7 +374,7 @@ namespace TestRedis
             switch (relationOperator)
             {
                 case RelationOperator.Le:
-                    result = RedisHelper.GetKeys(Folder, leftresult, rightResult, relationOperator);
+                    //result = RedisHelper.GetKeys(Folder, leftresult, rightResult, relationOperator);
                     break;
                 case RelationOperator.Lt:
                     result = (List<T>)leftresult.Union(rightResult);
@@ -176,26 +383,6 @@ namespace TestRedis
             return result;
         }
 
-        public string LetterParser()
-        {
-            switch (ch)
-            {
-                case '!': 
-                    NextChar();
-                    if (ch == '=')
-                    {
-                        NextChar();
-                        t = TokenId.ExclamationEqual;
-                    }
-                    else
-                    {
-                        t = TokenId.Exclamation;
-                    }
-                    break;
-            default:
-            }
-            return null;
-        }
         static bool IsNullableType(Type type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
@@ -254,16 +441,6 @@ namespace TestRedis
                     break;
             }
             return null;
-        }
-        void SetTextPos(int pos)
-        {
-            textPos = pos;
-            ch = textPos < textLen ? text[textPos] : '\0';
-        }
-        void NextChar()
-        {
-            if (textPos < textLen) textPos++;
-            ch = textPos < textLen ? text[textPos] : '\0';
         }
         private void NextToken()
         {

@@ -103,6 +103,20 @@ namespace TestRedis
             return Do(db => db.StringGet(ConvertRedisKeys(newKeys)));
         }
 
+        public List<T> StringGetToObj<T>(string folder, List<string> listKey)
+        {
+            var result = new List<T>();
+            var keyValues = _conn.GetDatabase().StringGet(ConvertRedisKeys(listKey));
+            foreach (var redisValue in keyValues)
+            {
+                if (redisValue.HasValue && !redisValue.IsNullOrEmpty)
+                {
+                    var item = JsonConvert.DeserializeObject<T>(redisValue);
+                    result.Add(item);
+                }
+            }
+            return result;
+        }
         /// <summary>
         /// 获取一个key的对象
         /// </summary>
@@ -841,50 +855,485 @@ namespace TestRedis
         /// </summary>
         /// <param name="folder">redis文件夹</param>
         /// <param name="keyvalue">redis key</param>
-        /// <param name="hostAndPort"></param>
         /// <returns></returns>
         public List<string> GetKeysContains(string folder, string keyvalue)
         {
             var keyList = new List<string>();
             var server = _conn.GetServer(RedisConnection.HostAndPort);
-            keyList.AddRange(server.Keys(pattern: string.Format("*{0}*", keyvalue)).Select(key => (string)key));
+            keyList.AddRange(server.Keys(pattern: string.Format("{0}*{1}*",folder, keyvalue)).Select(key => (string)key));
             return keyList;
         }
 
-        /// <summary>
-        ///  Redis String类型
-        /// 类似于模糊查询  key* 查出所有key开头的键
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
-        /// <param name="pageSize"></param>
-        /// <param name="commandFlags"></param>
-        /// <returns>List<T></returns>
-        public List<T> StringGetList<T>(string key, int pageSize = 1000, CommandFlags commandFlags = CommandFlags.None) where T : class
-        {
-            try
-            {
-                var server = _conn.GetServer(RedisConnection.HostAndPort);
-                var keys = server.Keys(_conn.GetDatabase().Database, key, pageSize, commandFlags);
-                var keyValues = _conn.GetDatabase().StringGet(keys.ToArray(), commandFlags);
 
-                var result = new List<T>();
-                foreach (var redisValue in keyValues)
+        /// <summary>
+        /// 根据folder，字段名查找对应条件的keys
+        /// </summary>
+        /// <param name="folder">redis文件夹</param>
+        /// <param name="expressionLeft">redis key</param>
+        /// <param name="expressionRight"></param>
+        /// <param name="relationSymbol"></param>
+        /// <returns></returns>
+        public List<string> GetKeysSearch(string folder, string expressionLeft, string expressionRight, RelationOperator relationSymbol)
+        {
+            var fieldFolder = folder + ":FieldsAttributeFolder";
+            var fieldlist = GetKeysContains(fieldFolder, expressionLeft).ToList();
+            var searchFieldlist = StringGetToObj<RedisSearchField>(folder, fieldlist);
+            var resultList = new List<string>();
+            //获取当前查询字段属性
+            var currentProp=searchFieldlist.FirstOrDefault(n => n.Name == expressionLeft);
+            if (relationSymbol != RelationOperator.Empty)
+            {
+                switch (relationSymbol)
                 {
-                    if (redisValue.HasValue && !redisValue.IsNullOrEmpty)
+                    case RelationOperator.Like:
+                        resultList = GetKeysContains(folder, expressionRight);
+                        break;
+                    case RelationOperator.Eq:
+                        if (currentProp != null)
+                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                        break;
+                    case RelationOperator.NotEq:
+                        if (currentProp != null)
+                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                        break;
+                    default:
+                        if (currentProp != null)
+                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                        break;
+                }
+            }
+            return resultList;
+        }
+
+        private List<string> LikeCompareList(RedisSearchField field, IEnumerable<string> keyList, RelationOperator relationOperator, string rightValue)
+        {
+            var result = new List<string>();
+            foreach (var key in keyList)
+            {
+                var lastOrDefault = key.Split(':').LastOrDefault();
+                if (lastOrDefault != null)
+                {
+                    var currValue = lastOrDefault.Split('_')[field.Index - 1];
+                    switch (field.TypeCode)
                     {
-                        var item = JsonConvert.DeserializeObject<T>(redisValue);
-                        result.Add(item);
+                        case TypeCode.String:
+                            break;
                     }
                 }
+            }
+            return null;
+        }
 
-                return result;
-            }
-            catch (Exception)
+        private List<string> ValueCompareList(RedisSearchField field, IEnumerable<string> keyList, RelationOperator relationOperator, string rightValue)
+        {
+            var result = new List<string>();
+            foreach (var key in keyList)
             {
-                // Log Exception
-                return null;
+                var lastOrDefault = key.Split(':').LastOrDefault();
+                if (lastOrDefault != null)
+                {
+                    var currValue = lastOrDefault.Split('_')[field.Index - 1];
+                    #region 判断属性类型进行比较
+                    switch (field.TypeCode)
+                    {
+                        case TypeCode.Byte:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Byte.Parse(currValue) > Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Byte.Parse(currValue) >= Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Byte.Parse(currValue) < Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Byte.Parse(currValue) <= Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Byte.Parse(currValue) == Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Byte.Parse(currValue) != Byte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Boolean:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Eq:
+                                    if (Boolean.Parse(currValue) == Boolean.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Boolean.Parse(currValue) != Boolean.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Char:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Eq:
+                                    if (Char.Parse(currValue) == Char.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Char.Parse(currValue) != Char.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.String:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Eq:
+                                    if (currValue == rightValue)
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (currValue != rightValue)
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.DBNull:
+                            break;
+                        case TypeCode.DateTime:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (DateTime.Parse(currValue) > DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (DateTime.Parse(currValue) >= DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (DateTime.Parse(currValue) < DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (DateTime.Parse(currValue) <= DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (DateTime.Parse(currValue) == DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (DateTime.Parse(currValue) != DateTime.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Decimal:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Decimal.Parse(currValue) > Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Decimal.Parse(currValue) >= Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Decimal.Parse(currValue) < Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Decimal.Parse(currValue) <= Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Decimal.Parse(currValue) == Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Decimal.Parse(currValue) != Decimal.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Double:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Double.Parse(currValue) > Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Double.Parse(currValue) >= Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Double.Parse(currValue) < Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Double.Parse(currValue) <= Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Double.Parse(currValue) == Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Double.Parse(currValue) != Double.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Empty:
+                            break;
+                        case TypeCode.Int16:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Int16.Parse(currValue) > Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Int16.Parse(currValue) >= Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Int16.Parse(currValue) < Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Int16.Parse(currValue) <= Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Int16.Parse(currValue) == Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Int16.Parse(currValue) != Int16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Int32:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Int32.Parse(currValue) > Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Int32.Parse(currValue) >= Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Int32.Parse(currValue) < Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Int32.Parse(currValue) <= Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Int32.Parse(currValue) == Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Int32.Parse(currValue) != Int32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Int64:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Int64.Parse(currValue) > Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Int64.Parse(currValue) >= Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Int64.Parse(currValue) < Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Int64.Parse(currValue) <= Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Int64.Parse(currValue) == Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Int64.Parse(currValue) != Int64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Object:
+                            break;
+                        case TypeCode.SByte:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (SByte.Parse(currValue) > SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (SByte.Parse(currValue) >= SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (SByte.Parse(currValue) < SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (SByte.Parse(currValue) <= SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (SByte.Parse(currValue) == SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (SByte.Parse(currValue) != SByte.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.Single:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (Single.Parse(currValue) > Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (Single.Parse(currValue) >= Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (Single.Parse(currValue) < Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (Single.Parse(currValue) <= Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (Single.Parse(currValue) == Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (Single.Parse(currValue) != Single.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.UInt16:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (UInt16.Parse(currValue) > UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (UInt16.Parse(currValue) >= UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (UInt16.Parse(currValue) < UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (UInt16.Parse(currValue) <= UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (UInt16.Parse(currValue) == UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (UInt16.Parse(currValue) != UInt16.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.UInt32:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (UInt32.Parse(currValue) > UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (UInt32.Parse(currValue) >= UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (UInt32.Parse(currValue) < UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (UInt32.Parse(currValue) <= UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (UInt32.Parse(currValue) == UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (UInt32.Parse(currValue) != UInt32.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                        case TypeCode.UInt64:
+                            switch (relationOperator)
+                            {
+                                case RelationOperator.Ge:
+                                    if (UInt64.Parse(currValue) > UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Gt:
+                                    if (UInt64.Parse(currValue) >= UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Le:
+                                    if (UInt64.Parse(currValue) < UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Lt:
+                                    if (UInt64.Parse(currValue) <= UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.Eq:
+                                    if (UInt64.Parse(currValue) == UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                                case RelationOperator.NotEq:
+                                    if (UInt64.Parse(currValue) != UInt64.Parse(rightValue))
+                                        result.Add(key);
+                                    break;
+                            }
+                            break;
+                    }
+                    #endregion
+                }
             }
+            return result;
         }
 
         #endregion key
@@ -1000,11 +1449,73 @@ namespace TestRedis
             return redisKeys.Select(redisKey => (RedisKey)redisKey).ToArray();
         }
 
+        public List<RedisSearchField> SetSearchFields(string folder, List<RedisSearchField> redisSearchFields)
+        {
+            try
+            {
+                if (redisSearchFields != null)
+                {
+                    for (int i = 1; i <= redisSearchFields.Count; i++)
+                    {
+                        redisSearchFields[i - 1].Index = i;
+                        var currentKey = string.Format("FieldsAttributeFolder:{0}", redisSearchFields[i - 1].Name);
+                        // ReSharper disable once CSharpWarnings::CS4014
+                        StringSetAsync(folder, currentKey, redisSearchFields[i - 1]);
+                    }
+                    return redisSearchFields.OrderBy(n=>n.Index).ToList();
+                }
+                else
+                {
+                    throw new Exception("查询字段配置数据不能为空");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public bool SetRedisData<T>(string folder, List<T> value, List<RedisSearchField> redisSearchFields)
+        {
+            try
+            {
+                foreach (var item in value)
+                {
+                    if (redisSearchFields != null)
+                    {
+                        var currentKey = "";
+                        var attrList = redisSearchFields.OrderBy(n => n.Index).ToList();
+                        foreach (var source in attrList)
+                        {
+                            currentKey = attrList.IndexOf(source) == 0 ? GetObjPropValue(item, source.Name) : currentKey + "_" + GetObjPropValue(item, source.Name);
+                        }
+                        // ReSharper disable once CSharpWarnings::CS4014
+                        StringSetAsync(folder, currentKey, item);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        private string GetObjPropValue<T>(T t, string propName)
+        {
+            foreach (PropertyInfo p in t.GetType().GetProperties())
+            {
+                if (p.Name.ToLower() == propName.ToLower())
+                {
+                    return p.GetValue(t).ToString();
+                }
+            }
+            return null;
+        }
+
         #endregion 辅助方法
 
-        public List<object> GetKeys(string folder, string leftresult, string rightResult, RelationOperator relationOperator)
-        {
-            throw new NotImplementedException();
-        }
+
     }
 }
