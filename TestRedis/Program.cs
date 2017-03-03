@@ -23,13 +23,22 @@ namespace TestRedis
                 new RedisSearchField{Name = "Age",TypeCode = TypeCode.Int32},
                 new RedisSearchField{Name = "PatientName",TypeCode = TypeCode.String},
                 new RedisSearchField{Name = "Company",TypeCode = TypeCode.String},
+                new RedisSearchField{Name = "IsMale",TypeCode = TypeCode.Boolean},
+                //new RedisSearchField{Name = "BirthDay",TypeCode = TypeCode.DateTime},
             };
 
             //redisservice.RedisSet("PatientInfo", paitients, redisSearchField);
 
-            var result = redisservice.GetList<PatientInfo>("PatientInfo", "Age > 20 && Company like '医利捷'");
-        }
+            //var test1 = redisservice.GetList<PatientInfo>("PatientInfo", "Age > 20 && Company like '医利捷'");
+            //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "(Age >= 20 && Company like '医利捷')||(Age == 18)");
+            //var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age =='12345678'");
+            //var test4 = redisservice.GetList<PatientInfo>("PatientInfo", "Age ==20");
+            //var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
+            //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
 
+            var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "IsMale == true");
+        }
+            
         private static List<PatientInfo> InitialPatientInfos()
         {
             var patientInfos = new List<PatientInfo>();
@@ -41,8 +50,8 @@ namespace TestRedis
                     PatientName = "male1",
                     Gender = 1,
                     Age = 25,
-                    Nation = "中华人民共和国",
-                    BirthDay = DateTime.Now,
+                    IsMale = false,
+                    BirthDay = DateTime.Now.AddDays(-2),
                     ICD = "4564646546156516165156",
                     FamilyPhone = "1111111111",
                     ContactPhone = "18615516481",
@@ -67,8 +76,8 @@ namespace TestRedis
                     PatientName = "male2",
                     Gender = 1,
                     Age = 20,
-                    Nation = "中华人民共和国",
-                    BirthDay = DateTime.Now,
+                    IsMale = true,
+                    BirthDay = DateTime.Now.AddDays(-5),
                     ICD = "456462664651615555",
                     FamilyPhone = "2222222222",
                     ContactPhone = "18615516561",
@@ -93,7 +102,7 @@ namespace TestRedis
                     PatientName = "female1",
                     Gender = 0,
                     Age = 18,
-                    Nation = "中华人民共和国",
+                    IsMale = true,
                     BirthDay = DateTime.Now,
                     ICD = "45648948951615555",
                     FamilyPhone = "333333333333",
@@ -267,7 +276,7 @@ namespace TestRedis
         public string PatientName { get; set; }
         public int Gender { get; set; }
         public float? Age { get; set; }
-        public string Nation { get; set; }
+        public bool IsMale { get; set; }
         public DateTime? BirthDay { get; set; }
         public string ICD { get; set; }
         public string FamilyPhone { get; set; }

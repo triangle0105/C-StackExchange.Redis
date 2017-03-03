@@ -71,7 +71,6 @@
     <Compile Include="RedisDynamicQueryable.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="PredicateBuilder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisConnection.cs" />
@@ -82,9 +81,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="FoldersConfiguration.xml" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">

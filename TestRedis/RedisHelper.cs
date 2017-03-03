@@ -881,24 +881,26 @@ namespace TestRedis
             var resultList = new List<string>();
             //获取当前查询字段属性
             var currentProp=searchFieldlist.FirstOrDefault(n => n.Name == expressionLeft);
+            var valueKeylist = GetKeysContains(folder, "").Where(n => !n.Contains(":FieldsAttributeFolder"));
             if (relationSymbol != RelationOperator.Empty)
             {
                 switch (relationSymbol)
                 {
                     case RelationOperator.Like:
-                        resultList = GetKeysContains(folder, expressionRight);
+                        //resultList = GetKeysContains(folder, expressionRight);
+                        resultList = LikeCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
                         break;
                     case RelationOperator.Eq:
                         if (currentProp != null)
-                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                            resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
                         break;
                     case RelationOperator.NotEq:
                         if (currentProp != null)
-                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                            resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
                         break;
                     default:
                         if (currentProp != null)
-                            resultList = ValueCompareList(currentProp, GetKeysContains(folder, expressionLeft), relationSymbol, expressionRight);
+                            resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
                         break;
                 }
             }
@@ -914,14 +916,11 @@ namespace TestRedis
                 if (lastOrDefault != null)
                 {
                     var currValue = lastOrDefault.Split('_')[field.Index - 1];
-                    switch (field.TypeCode)
-                    {
-                        case TypeCode.String:
-                            break;
-                    }
+                    if(currValue.Contains(rightValue))
+                        result.Add(key);
                 }
             }
-            return null;
+            return result;
         }
 
         private List<string> ValueCompareList(RedisSearchField field, IEnumerable<string> keyList, RelationOperator relationOperator, string rightValue)

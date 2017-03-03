@@ -15,12 +15,12 @@ namespace Test
         {
             var redishelper = new RedisHelper();
             var list = InitialData();
-            foreach (var patientInfo in list)
-            {
-                var result = redishelper.StringSetAsync("testfolderAsync", "testkey" + "_" + patientInfo.VisitNumber + "_" + patientInfo.Age, patientInfo);
-            }
+            //foreach (var patientInfo in list)
+            //{
+            //    var result = redishelper.StringSetAsync("testfolderAsync", "testkey" + "_" + patientInfo.VisitNumber + "_" + patientInfo.Age, patientInfo);
+            //}
             var json = @"{
-                          'Id': '006083e2-79b7-4dd9-9f2e-a36b506eafcd',
+                          'id': '006083e2-79b7-4dd9-9f2e-a36b506eafcd',
                           'VisitNumber': '12379534',
                           'PatientId': '23795',
                           'AdmissionNumber': null,
@@ -45,7 +45,7 @@ namespace Test
                           'UpdateTime': '2017-03-01T10:29:11.9380125+08:00',
                           'IsDelete': false
                         }";
-            var removePa = JsonConvert.DeserializeObject<PatientInfo>(json);
+            var removePa = JsonConvert.DeserializeObject<PatientInfo>(json.ToLower());
             //redishelper.HashSet("test", "PatientInfo", removePa.VisitNumber, removePa);
             //var dic = list.ToLookup(n => n.VisitNumber, n => n).ToDictionary(n => n.Key, n => n.First()).ToList();
             //var result = redishelper.StringSet("keyvaluepair", dic);
