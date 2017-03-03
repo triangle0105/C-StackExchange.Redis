@@ -804,15 +804,25 @@ namespace TestRedis
         }
 
         /// <summary>
-        /// 删除多个key
+        /// 删除整个folder
         /// </summary>
         /// <param name="folder">redis文件夹</param>
+        /// <param name="key">redis key</param>
+        /// <returns>是否删除成功</returns>
+        public long KeyDelete(string folder)
+        {
+            var deletekeys = GetKeysContains(folder,"");
+            return KeyDelete(deletekeys);
+        }
+
+        /// <summary>
+        /// 删除多个key
+        /// </summary>
         /// <param name="keys">rediskey</param>
         /// <returns>成功删除的个数</returns>
-        public long KeyDelete(string folder, List<string> keys)
+        public long KeyDelete(List<string> keys)
         {
-            List<string> newKeys = keys.Select(n => string.IsNullOrEmpty(folder) ? n : folder + ":" + n).ToList();
-            return Do(db => db.KeyDelete(ConvertRedisKeys(newKeys)));
+            return Do(db => db.KeyDelete(ConvertRedisKeys(keys)));
         }
 
         /// <summary>

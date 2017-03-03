@@ -12,7 +12,8 @@ namespace TestRedis
         public readonly RedisHelper RedisHelper=new RedisHelper();
         public bool RedisSet<T>(string folder,List<T> value,List<RedisSearchField> redisSearchFields)
         {
-            if (redisSearchFields == null) return true;
+            if (redisSearchFields == null) 
+                throw new Exception("查询属性不能为空");
             var fields=RedisHelper.SetSearchFields(folder, redisSearchFields);
             if (fields != null)
             {
@@ -20,10 +21,10 @@ namespace TestRedis
             }
             return true;
         }
-        
-        public string UpdateRedisSearchFields(string folder, List<RedisSearchField> redisSearchFields)
+
+        public long DeleteRedisData(string folder)
         {
-            return null;
+            return RedisHelper.KeyDelete(folder);
         }
 
         public List<T> GetList<T>(string folder, string searchText)

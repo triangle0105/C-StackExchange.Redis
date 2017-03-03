@@ -36,7 +36,7 @@ namespace TestRedis
             //var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
             //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
 
-            var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "IsMale == true");
+            var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age == 30");
         }
             
         private static List<PatientInfo> InitialPatientInfos()
