@@ -46,6 +46,7 @@ namespace Test
                           'IsDelete': false
                         }";
             var removePa = JsonConvert.DeserializeObject<PatientInfo>(json.ToLower());
+            var typecode=removePa.Company.GetTypeCode();
             //redishelper.HashSet("test", "PatientInfo", removePa.VisitNumber, removePa);
             //var dic = list.ToLookup(n => n.VisitNumber, n => n).ToDictionary(n => n.Key, n => n.First()).ToList();
             //var result = redishelper.StringSet("keyvaluepair", dic);

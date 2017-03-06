@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,18 +11,15 @@ using System.Threading;
 
 namespace TestRedis
 {
-    public static class RedisDynamicQueryable<T>
+    public static class RedisDynamicQueryable
     {
-        //(age>=15 || (name=="aaa" && age=10)) || (age<20 && name="ccc")
-        public static List<T> ReturnResult { get; set; }
         public static string Folder { get; set; }
         public static RedisHelper RedisHelper { get; set; }
-      
         public static List<T> Where<T>(string folder, string searchText,RedisHelper redisHelper)
         {
             Folder = folder;
             RedisHelper = redisHelper;
-            var expressionParser = new ExpressionParser<T>(searchText, folder, redisHelper);
+            var expressionParser = new ExpressionParser(searchText, folder, redisHelper);
             var resultkeyList=expressionParser.ExpressionLoop();
             if (resultkeyList == null)
             {
@@ -31,6 +29,39 @@ namespace TestRedis
             {
                 var result = RedisHelper.StringGetToObj<T>(folder, resultkeyList);
                 return result;
+            }
+        }
+        public static DataTable Where(string folder, string searchText, RedisHelper redisHelper)
+        {
+            Folder = folder;
+            RedisHelper = redisHelper;
+            var expressionParser = new ExpressionParser(searchText, folder, redisHelper);
+            var resultkeyList = expressionParser.ExpressionLoop();
+            if (resultkeyList == null)
+            {
+                return null;
+            }
+            else
+            {
+                var json = "";
+                var result = RedisHelper.StringGetToObj<string>(folder, resultkeyList);
+                for (int i = 1; i <= result.Count; i++)
+                {
+                    if (i == 1)
+                    {
+                        json += "["+result[i];
+                    }
+                    else if (i==result.Count)
+                    {
+                        json += "," + result[i] + "]";
+                    }
+                    else
+                    {
+                        json += "," + result[i];
+                    }
+                }
+                var dt = Helper.ToDataTableTwo(json);
+                return dt;
             }
         }
     }
@@ -47,9 +78,8 @@ namespace TestRedis
         Empty
     }
 
-    internal class ExpressionParser<T>
+    internal class ExpressionParser
     {
-        public static List<T> ReturnResult { get; set; }
         public RedisHelper RedisHelper { get; set; }
         internal string Folder { get; set; }
 

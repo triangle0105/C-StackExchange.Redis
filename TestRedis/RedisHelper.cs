@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using JDO;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
@@ -1489,21 +1491,31 @@ namespace TestRedis
         {
             try
             {
+                var tran = this.CreateTransaction();
+                var index = 0;
+                var dataIndex = StringGet(folder, "RedisDataIndex");
+                if (!string.IsNullOrEmpty(dataIndex))
+                {
+                    index = int.Parse(dataIndex);
+                }
+                var attrList = redisSearchFields.OrderBy(n => n.Index).ToList();
                 foreach (var item in value)
                 {
                     if (redisSearchFields != null)
                     {
                         var currentKey = "";
-                        var attrList = redisSearchFields.OrderBy(n => n.Index).ToList();
+                        index = (index + value.IndexOf(item));
                         foreach (var source in attrList)
                         {
-                            currentKey = attrList.IndexOf(source) == 0 ? GetObjPropValue(item, source.Name) : currentKey + "_" + GetObjPropValue(item, source.Name);
+                            currentKey = attrList.IndexOf(source) == 0 ? GetObjPropValue(item, source.Name) : currentKey + "_" + GetObjPropValue(item, source.Name) + "_" + index;
                         }
                         // ReSharper disable once CSharpWarnings::CS4014
-                        StringSetAsync(folder, currentKey, item);
+                        tran.StringSetAsync(string.IsNullOrEmpty(folder) ? (RedisKey)currentKey : (RedisKey)(folder + ":" + currentKey), ConvertJson(item));
                     }
                 }
-                return true;
+                StringSet(folder, "RedisDataIndex", index);
+                bool committed = tran.Execute();
+                return committed;
             }
             catch (Exception ex)
             {
@@ -1521,6 +1533,53 @@ namespace TestRedis
                 }
             }
             return null;
+        }
+
+        public bool SetRedisData(string folder, DataTable dt, List<RedisSearchField> redisSearchFields)
+        {
+            try
+            {
+                var tran = this.CreateTransaction();
+                var index = 0;
+                var dataIndex = StringGet(folder, "RedisDataIndex");
+                if (!string.IsNullOrEmpty(dataIndex))
+                {
+                    index = int.Parse(dataIndex);
+                }
+                var attrList = redisSearchFields.OrderBy(n => n.Index).ToList();
+                if (dt.Rows.Count > 0)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        var json = new StringBuilder();
+                        var currentKey = "";
+
+                        foreach (var field in attrList)
+                        {
+                            index = (index + i + 1);
+                            currentKey = attrList.IndexOf(field) == 0 ? dt.Rows[i][field.Name].ToString() : currentKey + "_" + dt.Rows[i][field.Name] + "_" + index;
+                        }
+                        json.Append("{");
+                        for (int j = 0; j < dt.Columns.Count; j++)
+                        {
+                            json.Append("\"" + dt.Columns[j].ColumnName + "\":\"" + dt.Rows[i][j] + "\"");
+                            if (j < dt.Columns.Count - 1)
+                            {
+                                json.Append(",");
+                            }
+                        }
+                        json.Append("}");
+                        tran.StringSetAsync(currentKey, json.ToString());
+                    }
+                }
+                StringSet(folder, "RedisDataIndex", index);
+                bool committed = tran.Execute();
+                return committed;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         #endregion 辅助方法

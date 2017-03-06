@@ -30,13 +30,16 @@ namespace TestRedis
             //redisservice.RedisSet("PatientInfo", paitients, redisSearchField);
 
             //var test1 = redisservice.GetList<PatientInfo>("PatientInfo", "Age > 20 && Company like '医利捷'");
-            //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "(Age >= 20 && Company like '医利捷')||(Age == 18)");
-            //var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age =='12345678'");
-            //var test4 = redisservice.GetList<PatientInfo>("PatientInfo", "Age ==20");
-            //var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
-            //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
-
+            var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "(Age >= 20 && Company like '医利捷')||(Age == 18)");
+            var test4 = redisservice.GetList<PatientInfo>("PatientInfo", "Age ==20");
+            var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
+            var test6 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
             var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age == 30");
+
+            //var tran = redisservice.RedisHelper.CreateTransaction();
+            //tran.StringSetAsync("tran_string", "test1");
+            //tran.StringSetAsync("tran_string1", "test2");
+            //bool committed = tran.Execute();
         }
             
         private static List<PatientInfo> InitialPatientInfos()
