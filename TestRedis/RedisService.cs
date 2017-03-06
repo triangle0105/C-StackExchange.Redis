@@ -15,7 +15,12 @@ namespace TestRedis
         {
             if (redisSearchFields == null || redisSearchFields.Count<=0) 
                 throw new Exception("查询属性不能为空");
-            var fields=RedisHelper.SetSearchFields(folder, redisSearchFields);
+            List<RedisSearchField> fields=null;
+            var fieldList=RedisHelper.GetKeysContains(folder, "FieldsAttributeFolder");
+            if (fieldList == null || fieldList.Count == 0)
+            {
+                fields = RedisHelper.SetSearchFields(folder, redisSearchFields);
+            }
             if (fields != null)
             {
                 RedisHelper.SetRedisData(folder, value, fields);
@@ -27,7 +32,12 @@ namespace TestRedis
         {
             if (redisSearchFields == null || redisSearchFields.Count <= 0)
                 throw new Exception("查询属性不能为空");
-            var fields = RedisHelper.SetSearchFields(folder, redisSearchFields);
+            List<RedisSearchField> fields = null;
+            var fieldList = RedisHelper.GetKeysContains(folder, "FieldsAttributeFolder");
+            if (fieldList == null || fieldList.Count == 0)
+            {
+                fields = RedisHelper.SetSearchFields(folder, redisSearchFields);
+            }
             if (fields != null)
             {
                 RedisHelper.SetRedisData(folder, value, fields);
