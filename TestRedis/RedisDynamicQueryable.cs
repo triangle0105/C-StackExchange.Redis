@@ -75,6 +75,7 @@ namespace TestRedis
         Eq,
         NotEq,
         Like,
+        In,
         Empty
     }
 
@@ -98,6 +99,7 @@ namespace TestRedis
 
         private string LeftExpression;
         private string RightExpression;
+        private bool IsInFlag=false;
 
         private int startPos=-1;
         private bool logicFlag = false;
@@ -156,6 +158,9 @@ namespace TestRedis
                         }
                         break;
                     case ')':
+                        if (IsInFlag)
+                        {
+                        }
                         if (!string.IsNullOrEmpty(expressionLeft) && string.IsNullOrEmpty(expressionRight) &&
                                  relationSymbol != RelationOperator.Empty && startPos != -1)
                         {
@@ -419,6 +424,37 @@ namespace TestRedis
                             {
                                 startPos = i;
                             }
+                        }
+                        break;
+                    case 'i':
+                        if (text[i + 1] == 'n' && text[i - 1] == ' ' && text[i + 2] == ' ' && text[i + 3] == '(')
+                        {
+                            relationSymbol = RelationOperator.In;
+                            var curstr = text.Substring(i + 4, (textLen - (i + 4))).Split(')').FirstOrDefault();
+                            if (!string.IsNullOrEmpty(curstr))
+                            {
+                                expressionRight = curstr;
+                            }
+                            if (logicSymbol != LogicOperator.Empty)
+                            {
+                                keylist2 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+                                var newkeylist = LogicOperation(keylist1, keylist2, logicSymbol);
+                                keylist1 = newkeylist;
+                                keylist2 = null;
+                                logicSymbol = LogicOperator.Empty;
+                            }
+                            else
+                            {
+                                keylist1 = this.RedisHelper.GetKeysSearch(Folder, expressionLeft, expressionRight, relationSymbol);
+
+                                //获取表达式结果清空左表达式
+                                expressionLeft = "";
+                                expressionRight = "";
+                                relationSymbol = RelationOperator.Empty;
+                                startPos = -1;
+                            }
+                            i = i + 4 + curstr.Length;
+
                         }
                         break;
                     default:

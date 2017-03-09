@@ -30,11 +30,12 @@ namespace TestRedis
             //redisservice.RedisSet("PatientInfo", paitients, redisSearchField);
 
             //var test1 = redisservice.GetList<PatientInfo>("PatientInfo", "Age > 20 && Company like '医利捷'");
-            var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "(Age >= 20 && Company like '医利捷')||(Age == 18)");
-            var test4 = redisservice.GetList<PatientInfo>("PatientInfo", "Age ==20");
-            var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
-            var test6 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
-            var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age == 30");
+            //var test2 = redisservice.GetList<PatientInfo>("PatientInfo", "(Age >= 20 && Company like '医利捷')||(Age == 18)");
+            //var test4 = redisservice.GetList<PatientInfo>("PatientInfo", "Age ==20");
+            //var test5 = redisservice.GetList<PatientInfo>("PatientInfo", "Company like '医利捷'&&PatientName=='male1'||Age>18");
+            //var test6 = redisservice.GetList<PatientInfo>("PatientInfo", "((Age <= 20 && Company like '医利捷')||PatientName=='male2') && PatientName like 'male'");
+            //var test3 = redisservice.GetList<PatientInfo>("PatientInfo", "Age == 30");
+            var test7 = redisservice.GetList<PatientInfo>("PatientInfo", "Age in (18,25)");
 
             //var tran = redisservice.RedisHelper.CreateTransaction();
             //tran.StringSetAsync("tran_string", "test1");
@@ -127,147 +128,6 @@ namespace TestRedis
             return patientInfos;
         }
 
-        //static void Main(string[] args)
-        //{
-
-        //    RedisHelper redisdbHelper = new RedisHelper();
-        //    ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-        //    IDatabase db = redis.GetDatabase();
-
-        //    string value1 = "abcdefg";
-        //    db.StringSet("mykey", value1);
-
-        //    var info = db.StringGet("mykey");
-        //    Console.WriteLine(info); // writes: "abcdefg"
-
-            //ISubscriber sub = redis.GetSubscriber();
-            //sub.Subscribe("messages", (channel, message) =>
-            //{
-            //    Console.WriteLine((string)message);
-            //});
-            //sub.Publish("messages", "hello");
-
-            //// sliding expiration
-            //db.KeyExpire("mykey", TimeSpan.FromSeconds(0), flags: CommandFlags.FireAndForget);
-            //var keylist = new List<string>
-            //{
-            //    "folertest1:keytest",
-            //    "folertest:keytest"
-            //};
-            //var list = redisdbHelper.StringGetAsync("", keylist);
-            //var value = (string)db.StringGet("mykey");
-            //foreach (var key in redisdbHelper.GetServer().Keys(pattern: "*ke*"))
-            //{
-            //    Console.WriteLine(key);
-            //}
-            //Console.WriteLine(value);
-            //Console.ReadKey();
-
-
-            //RedisHelper redis = new RedisHelper();
-
-            //#region String
-
-            //string str = "123";
-            //Demo demo = new Demo()
-            //{
-            //    Id = 1,
-            //    Name = "123"
-            //};
-            //var resukt = redis.StringSet("Folder1","redis_string_test", str);
-            //var str1 = redis.StringGet("Folder1", "redis_string_test");
-            //redis.StringSet("Folder1", "redis_string_model", demo);
-            //var model = redis.StringGet<Demo>("Folder1", "redis_string_model");
-
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    redis.StringIncrement("Folder1", "StringIncrement", 2);
-            //}
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    redis.StringDecrement("Folder1", "StringIncrement");
-            //}
-            //redis.StringSet("Folder1", "redis_string_model1", demo, TimeSpan.FromSeconds(10));
-
-            //#endregion String
-
-            //#region List
-
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    redis.ListRightPush("Folder1", "list", i);
-            //}
-
-            //for (int i = 10; i < 20; i++)
-            //{
-            //    redis.ListLeftPush("Folder1", "list", i);
-            //}
-            //var length = redis.ListLength("Folder1", "list");
-
-            //var leftpop = redis.ListLeftPop<string>("Folder1", "list");
-            //var rightPop = redis.ListRightPop<string>("Folder1", "list");
-
-            //var list = redis.ListRange<int>("Folder1", "list");
-
-            //#endregion List
-
-            //#region Hash
-
-            //redis.HashSet("Folder1", "user", "u1", "123");
-            //redis.HashSet("Folder1", "user", "u2", "1234");
-            //redis.HashSet("Folder1", "user", "u3", "1235");
-            //var news = redis.HashGet<string>("Folder1", "user", "u2");
-
-            //#endregion Hash
-
-            //#region 发布订阅
-
-            //redis.Subscribe("Channel1");
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    redis.Publish("Channel1", "msg" + i);
-            //    if (i == 2)
-            //    {
-            //        redis.Unsubscribe("Channel1");
-            //    }
-            //}
-
-            //#endregion 发布订阅
-
-            //#region 事务
-
-            //var tran = redis.CreateTransaction();
-
-            //tran.StringSetAsync("tran_string", "test1");
-            //tran.StringSetAsync("tran_string1", "test2");
-            //bool committed = tran.Execute();
-
-            //#endregion 事务
-
-            //#region Lock
-
-            //var db = redis.GetDatabase();
-            //RedisValue token = Environment.MachineName;
-            //if (db.LockTake("lock_test", token, TimeSpan.FromSeconds(10)))
-            //{
-            //    try
-            //    {
-            //        //TODO:开始做你需要的事情
-            //        Thread.Sleep(5000);
-            //    }
-            //    finally
-            //    {
-            //        db.LockRelease("lock_test", token);
-            //    }
-            //}
-
-            //#endregion Lock
-        //}
-    }
-    public class Demo
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
     }
 
     public class PatientInfo

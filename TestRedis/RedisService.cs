@@ -45,10 +45,10 @@ namespace TestRedis
             return true;
         }
 
-        public bool RedisUpdate()
-        {
-            return false;
-        }
+        //public bool RedisUpdate()
+        //{
+        //    return false;
+        //}
 
         public long DeleteRedisData(string folder)
         {
@@ -70,6 +70,11 @@ namespace TestRedis
         {
             var returnList = RedisDynamicQueryable.Where(folder, searchText, RedisHelper);
             return returnList;
+        }
+
+        public bool IsConnected()
+        {
+            return RedisHelper.IsConnected();
         }
     }
 }

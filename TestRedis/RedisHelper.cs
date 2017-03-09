@@ -910,6 +910,10 @@ namespace TestRedis
                         if (currentProp != null)
                             resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
                         break;
+                    case RelationOperator.In:
+                        if (currentProp != null)
+                            resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
+                        break;
                     default:
                         if (currentProp != null)
                             resultList = ValueCompareList(currentProp, valueKeylist, relationSymbol, expressionRight);
@@ -938,6 +942,11 @@ namespace TestRedis
         private List<string> ValueCompareList(RedisSearchField field, IEnumerable<string> keyList, RelationOperator relationOperator, string rightValue)
         {
             var result = new List<string>();
+            var inList = new List<string>();
+            if (relationOperator == RelationOperator.In)
+            {
+                inList = rightValue.Replace("'", "").Replace("\"", "").Split(',').ToList();
+            }
             foreach (var key in keyList)
             {
                 var lastOrDefault = key.Split(':').LastOrDefault();
@@ -974,6 +983,12 @@ namespace TestRedis
                                     if (Byte.Parse(currValue) != Byte.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Boolean:
@@ -986,6 +1001,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (Boolean.Parse(currValue) != Boolean.Parse(rightValue))
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1000,6 +1021,12 @@ namespace TestRedis
                                     if (Char.Parse(currValue) != Char.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.String:
@@ -1012,6 +1039,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (currValue != rightValue)
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1044,6 +1077,12 @@ namespace TestRedis
                                     if (DateTime.Parse(currValue) != DateTime.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Decimal:
@@ -1073,6 +1112,12 @@ namespace TestRedis
                                     if (Decimal.Parse(currValue) != Decimal.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Double:
@@ -1101,6 +1146,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (Double.Parse(currValue) != Double.Parse(rightValue))
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1133,6 +1184,12 @@ namespace TestRedis
                                     if (Int16.Parse(currValue) != Int16.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Int32:
@@ -1162,6 +1219,12 @@ namespace TestRedis
                                     if (Int32.Parse(currValue) != Int32.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Int64:
@@ -1190,6 +1253,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (Int64.Parse(currValue) != Int64.Parse(rightValue))
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1222,6 +1291,12 @@ namespace TestRedis
                                     if (SByte.Parse(currValue) != SByte.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.Single:
@@ -1250,6 +1325,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (Single.Parse(currValue) != Single.Parse(rightValue))
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1280,6 +1361,12 @@ namespace TestRedis
                                     if (UInt16.Parse(currValue) != UInt16.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.UInt32:
@@ -1309,6 +1396,12 @@ namespace TestRedis
                                     if (UInt32.Parse(currValue) != UInt32.Parse(rightValue))
                                         result.Add(key);
                                     break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
+                                    break;
                             }
                             break;
                         case TypeCode.UInt64:
@@ -1337,6 +1430,12 @@ namespace TestRedis
                                 case RelationOperator.NotEq:
                                     if (UInt64.Parse(currValue) != UInt64.Parse(rightValue))
                                         result.Add(key);
+                                    break;
+                                case RelationOperator.In:
+                                    if (inList.Contains(currValue))
+                                    {
+                                        result.Add(key);
+                                    }
                                     break;
                             }
                             break;
@@ -1421,6 +1520,11 @@ namespace TestRedis
         public IServer GetServer()
         {
             return _conn.GetServer(RedisConnection.HostAndPort);
+        }
+
+        public bool IsConnected()
+        {
+            return _conn.IsConnected;
         }
 
         #endregion 其他
